@@ -1,7 +1,7 @@
-from cocotb_vivado import run
+from cocotb_vivado.runner import get_runner
 import subprocess
 import os
-import pathlib
+from pathlib import Path
 import shutil
 
 import cocotb
@@ -52,16 +52,33 @@ async def cocotb_tb_test_fail(dut):
 
 
 def run_tb(module="test_tb"):
-    src_path = pathlib.Path(__file__).parent.absolute()
+    """
+    Launch test using the Python runner format.
+    """
+    # use inputted module name, test xfails for nonexistent module names
+    tb_name = module
 
-    shutil.rmtree("xsim.dir", ignore_errors=True)
+    proj_path = Path(__file__).resolve().parent
+    sources = [proj_path / "tb.v"]
 
-    if not os.path.exists("xsim.dir/work.tb/xsimk.so"):
-        subprocess.run(["xvlog", src_path / "tb.v"])
-        subprocess.run(["xelab", "work.tb", "-dll"])
+    sim = os.getenv("SIM","vivado")
+    hdl_toplevel_lang = "verilog"
+    toplevel = "tb"
 
-    run(module=module, xsim_design="xsim.dir/work.tb/xsimk.so", top_level_lang="verilog")
+    runner = get_runner(sim)
 
+    runner.build(
+        sources=sources,
+        hdl_toplevel=toplevel,
+        always=True,
+        timescale = ('1ns','1ps'),
+        parameters={},
+        waves=False)
+    runner.test(
+        hdl_toplevel=toplevel,
+        test_module=tb_name,
+        hdl_toplevel_lang=hdl_toplevel_lang,
+        waves=False)
 
 def test_tb():
     os.environ["TESTCASE"] = "cocotb_tb_test"

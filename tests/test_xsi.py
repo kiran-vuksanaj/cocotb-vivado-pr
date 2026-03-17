@@ -4,8 +4,13 @@ import pathlib
 from cocotb_vivado import xsi
 import random
 import shutil
+import pytest
 
-
+@pytest.mark.skipif(
+    not os.getenv("COCOTB_VIVADO_TEST_DIRECT"),
+    reason="Deprecated launching method. Specify COCOTB_VIVADO_TEST_DIRECT=1 to run test anyway."
+    "Additionally, make sure you first update the LD_LIBRARY_PATH; see README.md for details"
+)
 def test_xsi():
     src_path = pathlib.Path(__file__).parent.absolute()
 
