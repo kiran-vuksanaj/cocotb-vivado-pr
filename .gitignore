@@ -139,3 +139,5 @@ vivado*.jou
 fw
 results.xml
 xsim.ini
+
+sim_build/
