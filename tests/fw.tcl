@@ -1,5 +1,11 @@
 
-create_project -force fw fw -part xczu9eg-ffvb1156-2-e
+# create_project -force fw fw -part 
+if {[info exists env(COCOTB_DEFAULT_PART_NUM)]} {
+    set partNum $env(COCOTB_DEFAULT_PART_NUM)
+} else {
+    set partNum xczu9eg-ffvb1156-2-e
+}
+create_project -force fw fw -part $partNum
 
 variable design_name
 set design_name fw
@@ -139,13 +145,14 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+puts [get_files -filter {FILE_TYPE == "Block Designs"}]
 set wrapper_file [make_wrapper -files [get_files -filter {FILE_TYPE == "Block Designs"}] -top -import]
 set_property top fw_wrapper [current_fileset -simset]
 
 set_property -name {xsim.elaborate.xelab.more_options} -value {--dll} -objects [current_fileset -simset]
 
 # launch_simulation -absolute_path  -scripts_only -install_path xsim
-export_simulation -directory fw/sim_export -absolute_path -simulator xsim -force 
+export_simulation -directory fw/sim_export -absolute_path -force 
 
 close_project
 exit

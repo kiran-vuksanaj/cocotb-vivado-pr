@@ -1,16 +1,18 @@
 from cocotb_vivado import run
+from cocotb_vivado.runner import get_runner
+from pathlib import Path
 import subprocess
 import os
-import pathlib
 import shutil
 
 import cocotb
 from cocotb.triggers import Timer
 from cocotb.clock import Clock
 
+import pytest
+
 from cocotbext.axi import AxiLiteBus, AxiLiteMaster
 from cocotbext.axi import AxiStreamSink, AxiStreamSource, AxiStreamBus
-
 
 async def reset(signal, timer):
     signal.value = 1
@@ -75,8 +77,48 @@ async def cocotb_fw_test(dut):
 
     dut.areset.value = 0
 
+
+@pytest.mark.skipif(
+    '2025' in os.getenv("XILINX_VIVADO",''),
+    reason="The fw.tcl script fails in Vivado 2025.1, but works in Vivado 2024.2 (and lower)."
+)
 def test_fw():
-    src_path = pathlib.Path(__file__).parent.absolute()
+    """
+    Launch test using the Python runner format.
+    """
+    tb_name = "test_fw"
+
+    proj_path = Path(__file__).resolve().parent
+    sources = []
+
+    sim = os.getenv("SIM","vivado")
+    hdl_toplevel_lang = "verilog"
+    toplevel = "xil_defaultlib.fw_wrapper"
+
+    runner = get_runner(sim)
+    runner.add_export_simulation_tcl("fw.tcl","fw/sim_export", result_file="fw/fw.xpr",mode="tcl")
+
+    runner.build(
+        sources=sources,
+        hdl_toplevel=toplevel,
+        always=True,
+        timescale = ('1ns','1ps'),
+        parameters={},
+        waves=False)
+    runner.test(
+        hdl_toplevel=toplevel,
+        test_module=tb_name,
+        hdl_toplevel_lang=hdl_toplevel_lang,
+        waves=False)
+
+    
+@pytest.mark.skipif(
+    not os.getenv("COCOTB_VIVADO_TEST_DIRECT"),
+    reason="Deprecated launching method. Specify COCOTB_VIVADO_TEST_DIRECT=1 to run test anyway."
+    "Additionally, make sure you first update the LD_LIBRARY_PATH; see README.md for details"
+)
+def test_fw_directlaunch():
+    src_path = Path(__file__).parent.absolute()
 
     shutil.rmtree("fw", ignore_errors=True)
     if not os.path.exists("fw/fw.xpr"):
