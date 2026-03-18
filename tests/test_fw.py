@@ -96,7 +96,7 @@ def test_fw():
     toplevel = "xil_defaultlib.fw_wrapper"
 
     runner = get_runner(sim)
-    runner.add_export_simulation_tcl("fw.tcl","fw/sim_export", result_file="fw/fw.xpr",mode="tcl")
+    runner.add_export_simulation_tcl(tcl_file="fw.tcl",result_dir="fw/sim_export", result_file="fw/fw.xpr",mode="tcl")
 
     runner.build(
         sources=sources,
