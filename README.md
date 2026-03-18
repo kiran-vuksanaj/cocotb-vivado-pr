@@ -29,8 +29,9 @@ pip install cocotb-vivado (for VIVADO >= 2023.1)
 ```python
 import subprocess
 
-import cocotb_vivado
 import cocotb
+from cocotb_vivado.runner import get_runner
+from pathlib import Path
 from cocotb.triggers import Timer
 
 @cocotb.test()
@@ -42,10 +43,21 @@ async def simple_test(dut):
     assert dut.out.value == 1
 
 def test_simple():
-    subprocess.run(["xvlog", "tb.v"])
-    subprocess.run(["xelab", "work.tb", "-dll"])
-
-    cocotb_vivado.run(module="test_simple", xsim_design="xsim.dir/work.tb/xsimk.so", top_level_lang="verilog")
+    proj_path = Path(__file__).resolve().parent
+    runner = get_runner("vivado")
+    toplevel = "tb"
+    
+    runner.build(
+        sources=[ proj_path / "tb.v" ],
+        hdl_toplevel=toplevel
+    )
+    
+    runner.test(
+        hdl_toplevel=toplevel,
+        test_module="test_simple",
+        hdl_toplevel_lang="verilog"
+    )
+    
 ```
 
 See `testes/test_simple.py` for full example.
@@ -56,7 +68,6 @@ See the `tests` folder for examples.
 
 ```bash
 source ../Vivado/202X.X/settings64.sh
-export LD_LIBRARY_PATH=$XILINX_VIVADO/lib/lnx64.o
 pytest -s
 ```
 
@@ -65,6 +76,17 @@ Extra feature: One does not need to recompile the project when running/changing 
 ## Direct `XSI` interface
 
 You can use `XSI` interface directly see `tests/test_xsi.py` for an example.
+
+When using the `XSI` interface directly, or launching cocotb_vivado via `run()` and not the Python runner, an addition to the `LD_LIBRARY_PATH` must be made:
+
+```bash
+export LD_LIBRARY_PATH=$XILINX_VIVADO/lib/lnx64.o
+```
+
+To run tests utilizing the direct interface, run
+```bash
+COCOTB_VIVADO_TEST_DIRECT=1 pytest -s
+```
 
 ## Overcoming `XSI` limitations
 
